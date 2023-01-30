@@ -1,105 +1,83 @@
+variable "awsprops" {
+    type = "map"
+    default = {
+    region = "us-east-1"
+    vpc = "vpc-5234832d"
+    ami = "ami-0c1bea58988a989155"
+    itype = "t2.micro"
+    subnet = "subnet-81896c8e"
+    publicip = true
+    keyname = "myseckey"
+    secgroupname = "IAC-Sec-Group"
+  }
+}
+
 provider "aws" {
-  region  = "${var.aws-region}"
-  profile = "${var.aws-profile}"
+  region = lookup(var.awsprops, "region")
 }
 
-resource "aws_instance" "instance" {
-  ami                         = "${var.instance-ami}"
-  instance_type               = "${var.instance-type}"
- 
-  iam_instance_profile        = "${var.iam-role-name != "" ? var.iam-role-name : ""}"
-  key_name                    = "${var.instance-key-name != "" ? var.instance-key-name : ""}"
-  associate_public_ip_address = "${var.instance-associate-public-ip}"
-  # user_data                   = "${file("${var.user-data-script}")}"
-  user_data                   = "${var.user-data-script != "" ? file("${var.user-data-script}") : ""}"
-  vpc_security_group_ids      = ["${aws_security_group.sg.id}"]
-  subnet_id                   = "${aws_subnet.subnet.id}"
+resource "aws_security_group" "project-iac-sg" {
+  name = lookup(var.awsprops, "secgroupname")
+  description = lookup(var.awsprops, "secgroupname")
+  vpc_id = lookup(var.awsprops, "vpc")
 
-  tags = {
-    Name = "${var.instance-tag-name}"
-  }
-}
-
-resource "aws_vpc" "vpc" {
-  cidr_block           = "${var.vpc-cidr-block}"
-  enable_dns_hostnames = true
-
-  tags = {
-    Name = "${var.vpc-tag-name}"
-  }
-}
-
-resource "aws_internet_gateway" "ig" {
-  vpc_id = "${aws_vpc.vpc.id}"
-
-  tags = {
-    Name = "${var.ig-tag-name}"
-  }
-}
-
-resource "aws_subnet" "subnet" {
-  vpc_id     = "${aws_vpc.vpc.id}"
-  cidr_block = "${var.subnet-cidr-block}"
-
-  tags = {
-    Name = "${var.subnet-tag-name}"
-  }
-}
-
-resource "aws_route_table" "rt" {
-  vpc_id = "${aws_vpc.vpc.id}"
-
-  route {
-    cidr_block = "0.0.0.0/0"
-    gateway_id = "${aws_internet_gateway.ig.id}"
-  }
-}
-
-resource "aws_route_table_association" "rta" {
-  subnet_id      = "${aws_subnet.subnet.id}"
-  route_table_id = "${aws_route_table.rt.id}"
-}
-
-resource "aws_security_group" "sg" {
-  name   = "${var.sg-tag-name}"
-  vpc_id = "${aws_vpc.vpc.id}"
-
+  // To Allow SSH Transport
   ingress {
-    protocol    = "tcp"
+    from_port = 22
+    protocol = "tcp"
+    to_port = 22
     cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "22"
-    to_port     = "22"
   }
 
+  // To Allow Port 80 Transport
   ingress {
-    protocol    = "tcp"
+    from_port = 80
+    protocol = ""
+    to_port = 80
     cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "80"
-    to_port     = "80"
-  }
-
-  ingress {
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "443"
-    to_port     = "443"
-  }
-
-  ingress {
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "8080"
-    to_port     = "8080"
   }
 
   egress {
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-    from_port   = "0"
-    to_port     = "0"
+    from_port       = 0
+    to_port         = 0
+    protocol        = "-1"
+    cidr_blocks     = ["0.0.0.0/0"]
   }
 
-  tags = {
-    Name = "${var.sg-tag-name}"
+  lifecycle {
+    create_before_destroy = true
   }
+}
+
+
+resource "aws_instance" "project-iac" {
+  ami = lookup(var.awsprops, "ami")
+  instance_type = lookup(var.awsprops, "itype")
+  subnet_id = lookup(var.awsprops, "subnet") #FFXsubnet2
+  associate_public_ip_address = lookup(var.awsprops, "publicip")
+  key_name = lookup(var.awsprops, "keyname")
+
+
+  vpc_security_group_ids = [
+    aws_security_group.project-iac-sg.id
+  ]
+  root_block_device {
+    delete_on_termination = true
+    iops = 150
+    volume_size = 50
+    volume_type = "gp2"
+  }
+  tags = {
+    Name ="SERVER01"
+    Environment = "DEV"
+    OS = "UBUNTU"
+    Managed = "IAC"
+  }
+
+  depends_on = [ aws_security_group.project-iac-sg ]
+}
+
+
+output "ec2instance" {
+  value = aws_instance.project-iac.public_ip
 }
