@@ -17,3 +17,13 @@ resource "aws_instance" "example" {
 #}
   
 }
+
+output "inventory"{
+  value = templatefile(
+    "${path.module}/templates/inventory.tpl",
+    {
+      home_app     = aws_instance.example.public_ip
+ 
+    }
+  )
+}
