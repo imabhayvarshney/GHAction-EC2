@@ -9,7 +9,7 @@ resource "aws_instance" "Control" {
   instance_type = "t2.micro"
 
   tags =  { 
-	  Name = "Terraform Ec2"
+	  Name = "Terraform control-node"
   }
 }
 
@@ -18,7 +18,7 @@ resource "aws_instance" "worker" {
   instance_type = "t2.micro"
 
   tags =  { 
-	  Name = "Terraform Ec2"
+	  Name = "Terraform worker-node"
   }
 	
 #outputs " my console output" {
