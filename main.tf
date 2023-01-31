@@ -12,8 +12,8 @@ resource "aws_instance" "example" {
 	  Name = "Terraform Ec2"
   }
 	
-outputs " my console output" {
-	value = aws_instance.example.public_ip
-}
+#outputs " my console output" {
+#	value = aws_instance.example.public_ip
+#}
   
 }
