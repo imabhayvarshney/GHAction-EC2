@@ -4,7 +4,7 @@ provider "aws" {
 }
 
 # Create an EC2 instance
-resource "aws_instance" "Control" {
+resource "aws_instance" "control" {
   ami		= "ami-0aa7d40eeae50c9a9"
   instance_type = "t2.micro"
 
