@@ -11,7 +11,8 @@ resource "aws_instance" "Control" {
   tags =  { 
 	  Name = "Terraform Ec2"
   }
-	
+}
+
 resource "aws_instance" "worker" {
   ami		= "ami-0aa7d40eeae50c9a9"
   instance_type = "t2.micro"
